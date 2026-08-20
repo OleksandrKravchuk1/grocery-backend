@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Controller('orders')
 @UseGuards(SupabaseAuthGuard)
@@ -13,7 +14,7 @@ export class OrdersController {
   }
 
   @Post()
-  async createOrder(@Req() req: any, @Body() body: any) {
+  async createOrder(@Req() req: any, @Body() body: CreateOrderDto) {
     return this.ordersService.createOrder(req.user.userId, body)
   }
 }
