@@ -10,7 +10,11 @@ export class OrdersService {
       where: { user_id: userId },
       include: {
         order_items: {
-          include: { products: true }
+          include: {
+            products: {
+              include: { media: true }
+            }
+          }
         },
       },
       orderBy: { created_at: 'desc' }

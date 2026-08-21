@@ -7,13 +7,15 @@ export class ProductsService {
 
   async getAllProducts() {
     return this.prisma.products.findMany({
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'asc' },
+      include: { media: true }
     })
   }
 
   async getProductById(id: number) {
     return this.prisma.products.findUnique({
       where: { id },
+      include: { media: true }
     });
   }
 
