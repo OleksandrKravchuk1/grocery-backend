@@ -1,6 +1,12 @@
-import { IsDate, IsOptional, IsString, Length } from "class-validator";
+import { IsEnum, IsOptional, IsPhoneNumber, IsString, Length } from 'class-validator';
 
-export class UpdateProfileDto {
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  OTHER = 'other',
+}
+
+export class UpsertProfileDto {
   @IsString()
   @Length(2, 50, { message: 'First name must be at least 2 and at most 50 characters long' })
   firstName: string;
@@ -12,13 +18,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   @Length(10, 15, { message: 'Phone number must be at least 10 and at most 15 characters long' })
-  phone?: string;
+  phone: string;
 
   @IsOptional()
-  @IsString()
-  gender?: string;
-
-  @IsOptional()
-  @IsDate()
-  birthDay?: Date;
+  @IsEnum(Gender)
+  gender?: Gender;
 }

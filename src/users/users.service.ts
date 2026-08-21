@@ -1,31 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpsertProfileDto } from './dto/upsert-profile.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) { }
 
   async getProfile(userId: string) {
-    return this.prisma.profiles.findUnique({
+    const profile = await this.prisma.profiles.findUnique({
       where: { id: userId },
     });
+
+    if (!profile) {
+      throw new NotFoundException('User not found')
+    }
+
+    return profile;
   }
 
-  async upsertProfile(userId: string, data: any) {
+  async upsertProfile(userId: string, data: UpsertProfileDto) {
+    const profileData = {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      phone: data.phone,
+      gender: data.gender,
+    };
+
     return this.prisma.profiles.upsert({
       where: { id: userId },
-      update: {
-        first_name: data.firstName,
-        last_name: data.lastName,
-        phone: data.phone,
-        gender: data.gender,
-      },
+      update: profileData,
       create: {
         id: userId,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        phone: data.phone,
-        gender: data.gender,
+        ...profileData,
       },
     });
   }

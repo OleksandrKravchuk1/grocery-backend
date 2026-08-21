@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Body, Req, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpsertProfileDto } from './dto/upsert-profile.dto';
 
 @Controller('users')
 @UseGuards(SupabaseAuthGuard)
@@ -14,7 +14,7 @@ export class UsersController {
   }
 
   @Patch('me')
-  async updateMyProfile(@Req() req: any, @Body() body: UpdateProfileDto) {
+  async upsertMyProfile(@Req() req: any, @Body() body: UpsertProfileDto) {
     return this.userService.upsertProfile(req.user.userId, body);
   }
 }
