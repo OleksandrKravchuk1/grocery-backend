@@ -11,22 +11,17 @@ export class UsersService {
     });
   }
 
-  async createProfile(userId: string, data: any) {
-    return this.prisma.profiles.create({
-      data: {
-        id: userId,
+  async upsertProfile(userId: string, data: any) {
+    return this.prisma.profiles.upsert({
+      where: { id: userId },
+      update: {
         first_name: data.firstName,
         last_name: data.lastName,
         phone: data.phone,
         gender: data.gender,
-      }
-    })
-  }
-
-  async updateProfile(userId: string, data: any) {
-    return this.prisma.profiles.update({
-      where: { id: userId },
-      data: {
+      },
+      create: {
+        id: userId,
         first_name: data.firstName,
         last_name: data.lastName,
         phone: data.phone,
