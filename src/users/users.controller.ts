@@ -15,6 +15,6 @@ export class UsersController {
 
   @Patch('me')
   async updateMyProfile(@Req() req: any, @Body() body: UpdateProfileDto) {
-    return this.userService.updateProfile(req.user.userId, body);
+    return this.userService.upsertProfile(req.user.userId, body);
   }
 }
