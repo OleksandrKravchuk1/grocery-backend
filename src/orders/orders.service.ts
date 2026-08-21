@@ -31,7 +31,7 @@ export class OrdersService {
           create: data.items.map((item: any) => ({
             product_id: item.productId,
             quantity: item.quantity,
-            price_at_time: item.price,
+            price: item.price,
           })),
         },
       },
