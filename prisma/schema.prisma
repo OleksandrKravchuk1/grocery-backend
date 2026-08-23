@@ -115,9 +115,25 @@ model orders {
   updated_at                    DateTime                        @default(now()) @db.Timestamptz(3)
   order_items                   order_items[]
   payload_locked_documents_rels payload_locked_documents_rels[]
+  deliveries                    deliveries?
 
   @@index([created_at])
   @@index([updated_at])
+}
+
+model deliveries {
+  id             Int      @id @default(autoincrement())
+  order_id       Int      @unique
+  order          orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  status         String   @db.VarChar
+  current_lat    Decimal? @db.Decimal
+  current_lng    Decimal? @db.Decimal
+  restaurant_lat Decimal? @db.Decimal
+  restaurant_lng Decimal? @db.Decimal
+  user_lat       Decimal? @db.Decimal
+  user_lng       Decimal? @db.Decimal
+  created_at     DateTime @default(now()) @db.Timestamptz(3)
+  updated_at     DateTime @default(now()) @db.Timestamptz(3)
 }
 
 model payload_kv {
