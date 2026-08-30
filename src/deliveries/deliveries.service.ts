@@ -30,7 +30,7 @@ export class DeliveriesService {
     return delivery;
   }
 
-  private startSimulation(
+  async startSimulation(
     orderId: number,
     restaurantCoord: { lat: number; lng: number },
     userCoord: { lat: number; lng: number },
@@ -43,12 +43,13 @@ export class DeliveriesService {
         });
       } catch (error) {
         this.logger.error(`Failed to update status to processing for order ${orderId}`, error);
+        return;
       }
-    }, 10000);
 
-    setTimeout(() => {
-      this.runCourierMovement(orderId, restaurantCoord, userCoord);
-    }, 25000);
+      setTimeout(() => {
+        this.runCourierMovement(orderId, restaurantCoord, userCoord);
+      }, 15000);
+    }, 10000);
   }
 
   private runCourierMovement(
@@ -59,7 +60,7 @@ export class DeliveriesService {
     const totalSteps = 20;
     let currentStep = 0;
 
-    const timer = setInterval(async () => {
+    const runStep = async () => {
       try {
         currentStep++;
         const progress = currentStep / totalSteps;
@@ -72,9 +73,7 @@ export class DeliveriesService {
           (Number(userCoord.lng) - Number(restaurantCoord.lng)) * progress;
 
         if (currentStep >= totalSteps) {
-          clearInterval(timer);
           this.activeSimulations.delete(orderId);
-
           await this.prisma.deliveries.update({
             where: { order_id: orderId },
             data: {
@@ -92,15 +91,18 @@ export class DeliveriesService {
               current_lng: currentLng,
             },
           });
+          const timeout = setTimeout(runStep, 3000);
+          this.activeSimulations.set(orderId, timeout);
+
         }
       } catch (error) {
         this.logger.error(`Error during courier movement simulation for order ${orderId}`, error);
-        clearInterval(timer);
         this.activeSimulations.delete(orderId);
       }
-    }, 3000);
+    };
 
-    this.activeSimulations.set(orderId, timer);
+    const initialTimeout = setTimeout(runStep, 3000);
+    this.activeSimulations.set(orderId, initialTimeout);
   }
 
   async getDeliveryStatus(orderId: number) {

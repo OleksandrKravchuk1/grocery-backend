@@ -27,25 +27,43 @@ export class OrdersService {
   }
 
   async createOrder(userId: string, data: CreateOrderDto) {
-    const order = await this.prisma.orders.create({
-      data: {
-        user_id: userId,
-        total_price: data.totalPrice,
-        status: 'pending',
-        order_items: {
-          create: data.items.map((item: any) => ({
-            product_id: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+    const restaurantCoord = { lat: 50.4501, lng: 30.5234 };
+    const userCoord = { lat: 50.4550, lng: 30.5300 };
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      const newOrder = await tx.orders.create({
+        data: {
+          user_id: userId,
+          total_price: data.totalPrice,
+          status: 'pending',
+          order_items: {
+            create: data.items.map((item: any) => ({
+              product_id: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          },
         },
-      },
+      });
+
+      await tx.deliveries.create({
+        data: {
+          order_id: newOrder.id,
+          status: 'pending',
+          restaurant_lat: restaurantCoord.lat,
+          restaurant_lng: restaurantCoord.lng,
+          user_lat: userCoord.lat,
+          user_lng: userCoord.lng,
+          current_lat: restaurantCoord.lat,
+          current_lng: restaurantCoord.lng,
+        },
+      });
+
+      return newOrder;
     });
-    await this.deliveriesService.createDelivery(
-      order.id,
-      { lat: 50.4501, lng: 30.5234 },
-      { lat: 50.4550, lng: 30.5300 }
-    );
+
+    this.deliveriesService.startSimulation(order.id, restaurantCoord, userCoord);
+
     return order;
   }
 }
