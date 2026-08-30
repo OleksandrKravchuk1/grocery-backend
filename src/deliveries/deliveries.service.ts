@@ -1,0 +1,113 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+@Injectable()
+export class DeliveriesService {
+  private readonly logger = new Logger(DeliveriesService.name);
+  private activeSimulations = new Map<number, NodeJS.Timeout>();
+
+  constructor(private prisma: PrismaService) { }
+
+  async createDelivery(
+    orderId: number,
+    restaurantCoord: { lat: number; lng: number },
+    userCoord: { lat: number; lng: number },
+  ) {
+    const delivery = await this.prisma.deliveries.create({
+      data: {
+        order_id: orderId,
+        status: 'pending',
+        restaurant_lat: restaurantCoord.lat,
+        restaurant_lng: restaurantCoord.lng,
+        user_lat: userCoord.lat,
+        user_lng: userCoord.lng,
+        current_lat: restaurantCoord.lat,
+        current_lng: restaurantCoord.lng,
+      },
+    });
+
+    this.startSimulation(orderId, restaurantCoord, userCoord);
+    return delivery;
+  }
+
+  async startSimulation(
+    orderId: number,
+    restaurantCoord: { lat: number; lng: number },
+    userCoord: { lat: number; lng: number },
+  ) {
+    setTimeout(async () => {
+      try {
+        await this.prisma.deliveries.update({
+          where: { order_id: orderId },
+          data: { status: 'processing' },
+        });
+      } catch (error) {
+        this.logger.error(`Failed to update status to processing for order ${orderId}`, error);
+        return;
+      }
+
+      setTimeout(() => {
+        this.runCourierMovement(orderId, restaurantCoord, userCoord);
+      }, 15000);
+    }, 10000);
+  }
+
+  private runCourierMovement(
+    orderId: number,
+    restaurantCoord: { lat: number; lng: number },
+    userCoord: { lat: number; lng: number },
+  ) {
+    const totalSteps = 20;
+    let currentStep = 0;
+
+    const runStep = async () => {
+      try {
+        currentStep++;
+        const progress = currentStep / totalSteps;
+
+        const currentLat =
+          Number(restaurantCoord.lat) +
+          (Number(userCoord.lat) - Number(restaurantCoord.lat)) * progress;
+        const currentLng =
+          Number(restaurantCoord.lng) +
+          (Number(userCoord.lng) - Number(restaurantCoord.lng)) * progress;
+
+        if (currentStep >= totalSteps) {
+          this.activeSimulations.delete(orderId);
+          await this.prisma.deliveries.update({
+            where: { order_id: orderId },
+            data: {
+              status: 'delivered',
+              current_lat: userCoord.lat,
+              current_lng: userCoord.lng,
+            },
+          });
+        } else {
+          await this.prisma.deliveries.update({
+            where: { order_id: orderId },
+            data: {
+              status: 'shipped',
+              current_lat: currentLat,
+              current_lng: currentLng,
+            },
+          });
+          const timeout = setTimeout(runStep, 3000);
+          this.activeSimulations.set(orderId, timeout);
+
+        }
+      } catch (error) {
+        this.logger.error(`Error during courier movement simulation for order ${orderId}`, error);
+        this.activeSimulations.delete(orderId);
+      }
+    };
+
+    const initialTimeout = setTimeout(runStep, 3000);
+    this.activeSimulations.set(orderId, initialTimeout);
+  }
+
+  async getDeliveryStatus(orderId: number) {
+    return this.prisma.deliveries.findUnique({
+      where: { order_id: orderId },
+    });
+  }
+}

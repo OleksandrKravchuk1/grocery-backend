@@ -8,6 +8,7 @@ import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { UsersModule } from './users/users.module';
 import { FavouritesModule } from './favourites/favourites.module';
+import { DeliveriesModule } from './deliveries/deliveries.module';
 
 @Module({
   imports: [
@@ -17,9 +18,11 @@ import { FavouritesModule } from './favourites/favourites.module';
     ProductsModule,
     OrdersModule,
     UsersModule,
-    FavouritesModule
+    FavouritesModule,
+    DeliveriesModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule { }
+
