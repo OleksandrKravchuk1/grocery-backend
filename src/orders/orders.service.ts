@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { DeliveriesService } from 'src/deliveries/deliveries.service';
@@ -21,6 +21,7 @@ export class OrdersService {
             }
           }
         },
+        deliveries: true,
       },
       orderBy: { created_at: 'desc' }
     });
@@ -67,4 +68,3 @@ export class OrdersService {
     return order;
   }
 }
-
