@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -37,10 +37,16 @@ export class DeliveriesService {
   ) {
     setTimeout(async () => {
       try {
-        await this.prisma.deliveries.update({
-          where: { order_id: orderId },
-          data: { status: 'processing' },
-        });
+        await this.prisma.$transaction([
+          this.prisma.deliveries.update({
+            where: { order_id: orderId },
+            data: { status: 'processing' },
+          }),
+          this.prisma.orders.update({
+            where: { id: orderId },
+            data: { status: 'processing' },
+          }),
+        ]);
       } catch (error) {
         this.logger.error(`Failed to update status to processing for order ${orderId}`, error);
         return;
@@ -74,26 +80,37 @@ export class DeliveriesService {
 
         if (currentStep >= totalSteps) {
           this.activeSimulations.delete(orderId);
-          await this.prisma.deliveries.update({
-            where: { order_id: orderId },
-            data: {
-              status: 'delivered',
-              current_lat: userCoord.lat,
-              current_lng: userCoord.lng,
-            },
-          });
+          await this.prisma.$transaction([
+            this.prisma.deliveries.update({
+              where: { order_id: orderId },
+              data: {
+                status: 'delivered',
+                current_lat: userCoord.lat,
+                current_lng: userCoord.lng,
+              },
+            }),
+            this.prisma.orders.update({
+              where: { id: orderId },
+              data: { status: 'delivered' },
+            }),
+          ]);
         } else {
-          await this.prisma.deliveries.update({
-            where: { order_id: orderId },
-            data: {
-              status: 'shipped',
-              current_lat: currentLat,
-              current_lng: currentLng,
-            },
-          });
+          await this.prisma.$transaction([
+            this.prisma.deliveries.update({
+              where: { order_id: orderId },
+              data: {
+                status: 'shipped',
+                current_lat: currentLat,
+                current_lng: currentLng,
+              },
+            }),
+            this.prisma.orders.update({
+              where: { id: orderId },
+              data: { status: 'shipped' },
+            }),
+          ]);
           const timeout = setTimeout(runStep, 3000);
           this.activeSimulations.set(orderId, timeout);
-
         }
       } catch (error) {
         this.logger.error(`Error during courier movement simulation for order ${orderId}`, error);
